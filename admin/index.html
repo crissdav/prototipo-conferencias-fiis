@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#013d75" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Ingreso</title>
+    <link rel="icon" href="../assets/logo-fiis.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/admin.css" />
+    <script src="../assets/js/auth.js"></script>
+    <script>
+      // Con sesión válida no tiene sentido mostrar el login.
+      if (FIISAuth.getSession()) location.replace("panel.html#/panel")
+    </script>
+  </head>
+  <body>
+    <main class="admin-gate-fondo">
+      <section class="admin-gate" aria-labelledby="admin-login-title">
+        <a href="../index.html" class="admin-gate__logo" aria-label="Ciclo de Conferencias FIIS — sitio público">
+          <img src="../assets/logo-fiis.png" alt="" width="56" height="56" />
+        </a>
+        <h1 id="admin-login-title" class="admin-gate__title">Ingreso</h1>
+        <p class="admin-gate__lead">Acceso del equipo de la FIIS.</p>
+        <p role="status" class="admin-gate__status" id="sesion-expirada" hidden>Tu sesión terminó. Vuelve a ingresar.</p>
+
+        <form class="admin-form" id="login-form" novalidate>
+          <label class="form-label">
+            Correo
+            <input name="correo" type="email" autocomplete="username" autofocus spellcheck="false" class="field" />
+            <span class="form-error" data-error="email" hidden></span>
+          </label>
+
+          <label class="form-label">
+            Contraseña
+            <span class="admin-password">
+              <input name="password" type="password" autocomplete="current-password" class="field" />
+              <button type="button" class="admin-password__toggle" aria-pressed="false" id="toggle-password">Mostrar</button>
+            </span>
+            <span class="form-error" data-error="password" hidden></span>
+          </label>
+
+          <p role="alert" class="form-alert" id="login-message" hidden></p>
+
+          <button type="submit" class="btn-primary w-full" style="margin-top: 0.25rem" id="login-submit">Ingresar</button>
+        </form>
+
+        <a href="../index.html" class="admin-gate__back">Volver al sitio</a>
+      </section>
+    </main>
+
+    <script>
+      ;(function () {
+        if (new URLSearchParams(location.search).get("sesion") === "expirada") {
+          document.getElementById("sesion-expirada").hidden = false
+        }
+
+        const form = document.getElementById("login-form")
+        const email = form.elements.correo
+        const password = form.elements.password
+        const submit = document.getElementById("login-submit")
+        const message = document.getElementById("login-message")
+        const toggle = document.getElementById("toggle-password")
+
+        toggle.addEventListener("click", () => {
+          const show = password.type === "password"
+          password.type = show ? "text" : "password"
+          toggle.textContent = show ? "Ocultar" : "Mostrar"
+          toggle.setAttribute("aria-pressed", String(show))
+        })
+
+        function setError(key, text, input) {
+          const el = form.querySelector(`[data-error="${key}"]`)
+          el.textContent = text || ""
+          el.hidden = !text
+          input.setAttribute("aria-invalid", String(Boolean(text)))
+        }
+
+        form.addEventListener("submit", (e) => {
+          e.preventDefault()
+          if (submit.disabled) return
+          message.hidden = true
+          const correo = email.value.trim()
+          const errEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? "" : "Escribe un correo válido."
+          const errPass = password.value.length === 0 ? "Escribe tu contraseña." : ""
+          setError("email", errEmail, email)
+          setError("password", errPass, password)
+          if (errEmail || errPass) return
+
+          submit.disabled = true
+          submit.textContent = "Ingresando…"
+          // Pequeña espera para imitar la ida y vuelta al servidor.
+          setTimeout(() => {
+            const result = FIISAuth.login(correo, password.value)
+            if (result.ok) {
+              location.replace("panel.html#/panel")
+              return
+            }
+            message.textContent = result.message
+            message.hidden = false
+            submit.disabled = false
+            submit.textContent = "Ingresar"
+          }, 450)
+        })
+      })()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#013d75" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Panel</title>
+    <link rel="icon" href="../assets/logo-fiis.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/admin.css" />
+    <script src="../assets/js/auth.js"></script>
+    <script>
+      // Primera barrera del panel: sin sesión no se entra (proxy.ts + requireSession()).
+      if (!FIISAuth.getSession()) location.replace(FIISAuth.hadSession() ? "index.html?sesion=expirada" : "index.html")
+    </script>
+  </head>
+  <body>
+    <div class="panel-body">
+      <header class="panel-topbar">
+        <button type="button" class="panel-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="drawer-open">
+          <i data-icon="Menu" data-size="20"></i>
+        </button>
+        <div class="panel-brand">
+          <img src="../assets/logo-fiis.png" alt="" width="36" height="36" />
+          <p>Conferencias FIIS</p>
+        </div>
+        <div class="panel-user">
+          <div class="panel-user__info">
+            <p class="panel-user__name" id="user-name"></p>
+            <p class="panel-user__rol" id="user-rol"></p>
+          </div>
+          <span class="panel-divider" aria-hidden="true"></span>
+          <button type="button" class="panel-logout" aria-label="Cerrar sesión" id="logout">
+            <i data-icon="LogOut" data-size="16"></i>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="panel-layout">
+        <aside class="panel-lateral panel-aside" id="nav-escritorio"></aside>
+        <main class="panel-main" id="panel-main"></main>
+      </div>
+
+      <div class="panel-drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menú">
+        <button type="button" class="panel-drawer__scrim" aria-label="Cerrar menú" id="drawer-scrim"></button>
+        <aside class="panel-lateral panel-drawer__aside" id="drawer-aside">
+          <div class="panel-drawer__head">
+            <div class="panel-brand">
+              <img src="../assets/logo-fiis.png" alt="" width="36" height="36" />
+              <p>Conferencias FIIS</p>
+            </div>
+            <button type="button" class="panel-icon-btn" aria-label="Cerrar menú" id="drawer-close">
+              <i data-icon="X" data-size="20"></i>
+            </button>
+          </div>
+          <div class="panel-drawer__nav" id="nav-movil"></div>
+        </aside>
+      </div>
+    </div>
+
+    <script src="../assets/js/icons.js"></script>
+    <script src="../assets/js/reportes-data.js"></script>
+    <script src="../assets/js/reportes.js"></script>
+    <script src="../assets/js/panel.js"></script>
+  </body>
+</html>

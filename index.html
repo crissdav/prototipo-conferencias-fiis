@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#013d75" />
+    <title>Ciclo de Conferencias FIIS 2026 · UNAS</title>
+    <meta
+      name="description"
+      content="Ciclo de Conferencias y Talleres de la Facultad de Ingeniería en Informática y Sistemas (UNAS). 25 y 26 de noviembre de 2026 en Tingo María, Huánuco."
+    />
+    <link rel="icon" href="assets/logo-fiis.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+  </head>
+  <body>
+    <div class="page">
+      <a href="#contenido" class="skip-link">Saltar al contenido</a>
+
+      <header class="site-header" id="site-header">
+        <div class="site-header__bar">
+          <div class="section-shell header-row">
+            <a href="#inicio" class="logo" aria-label="Ciclo de Conferencias FIIS 2026 — inicio">
+              <span class="logo__frame"><img src="assets/logo-fiis.png" alt="" class="logo__img" width="160" height="160" /></span>
+              <span class="logo-title-text">Ciclo de Conferencias FIIS</span>
+            </a>
+            <nav class="nav-desktop" aria-label="Principal" id="nav-desktop"></nav>
+            <button type="button" class="nav-link nav-menu-btn" id="nav-menu-btn" aria-expanded="false" aria-controls="mobile-nav" aria-label="Abrir menú">
+              <i data-icon="Menu" data-size="18"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mobile-nav-scrim" id="mobile-nav-scrim" aria-hidden="true"></div>
+        <div id="mobile-nav" class="mobile-nav-sheet" role="dialog" aria-modal="true" aria-label="Navegación móvil">
+          <div class="mobile-nav-grab" aria-hidden="true"><span></span></div>
+          <div class="mobile-nav-body">
+            <nav aria-label="Móvil">
+              <div class="mobile-nav-group" id="nav-mobile"></div>
+              <div class="mobile-nav-footer">
+                <button type="button" class="btn-primary w-full" data-inscription data-close-nav>Inscríbete ahora</button>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main id="contenido">
+        <section id="inicio" class="hero-canvas">
+          <div class="hero-backdrop" aria-hidden="true">
+            <div class="fluid-bg" id="fluid-bg"></div>
+            <div class="hero-backdrop-scrim"></div>
+          </div>
+
+          <div class="section-shell hero-grid">
+            <div style="min-width: 0">
+              <div class="hero-fade" style="animation-delay: 0ms">
+                <h1 class="font-display hero-title">Ciclo de Conferencias FIIS 2026</h1>
+              </div>
+              <div class="hero-fade" style="animation-delay: 120ms">
+                <p class="text-body hero-lead">
+                  Dos días de conferencias y talleres sobre cloud, ciberseguridad, inteligencia artificial e IoT.
+                  <strong>Tecnología, innovación y talento digital desde la Amazonía.</strong>
+                </p>
+              </div>
+              <div class="hero-fade" style="animation-delay: 180ms">
+                <ul class="hero-meta">
+                  <li><i data-icon="CalendarDays" data-size="17"></i>25 y 26 de noviembre de 2026</li>
+                  <li><i data-icon="MapPin" data-size="17"></i>FIIS · UNAS, Tingo María, Huánuco</li>
+                </ul>
+              </div>
+              <div class="hero-fade btn-stack" style="animation-delay: 240ms">
+                <button type="button" class="btn-primary btn-hint" data-inscription>
+                  Inscríbete ahora <i data-icon="ArrowUpRight" data-size="16" class="btn-hint__icon"></i>
+                </button>
+                <a href="#programa" class="btn-outline">Ver programa</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div id="secciones"></div>
+      </main>
+
+      <footer class="site-footer section-tone-deep">
+        <div class="section-shell site-footer__main">
+          <div class="site-footer__grid">
+            <div class="site-footer__brand">
+              <a href="#inicio" class="logo logo--framed site-footer__logo" aria-label="Ciclo de Conferencias FIIS 2026 — inicio">
+                <span class="logo__frame"><img src="assets/logo-fiis.png" alt="" class="logo__img" width="160" height="160" /></span>
+                <span class="logo-title-text">Ciclo de Conferencias FIIS</span>
+              </a>
+              <p class="site-footer__tagline text-body">
+                Facultad de Ingeniería en Informática y Sistemas · Universidad Nacional Agraria de la Selva · Tingo María,
+                Huánuco, Perú
+              </p>
+            </div>
+            <nav aria-label="Evento">
+              <p class="site-footer__column-title">Evento</p>
+              <ul class="site-footer__links">
+                <li><a href="#evento" class="site-footer__link">El evento</a></li>
+                <li><a href="#ponentes" class="site-footer__link">Ponentes</a></li>
+                <li><a href="#conferencias" class="site-footer__link">Conferencias</a></li>
+                <li><a href="#talleres" class="site-footer__link">Talleres</a></li>
+              </ul>
+            </nav>
+            <nav aria-label="Participa">
+              <p class="site-footer__column-title">Participa</p>
+              <ul class="site-footer__links">
+                <li><a href="#inscripcion" class="site-footer__link">Inscripción</a></li>
+                <li><a href="#preguntas" class="site-footer__link">Preguntas frecuentes</a></li>
+                <li><a href="#ubicacion" class="site-footer__link">Ubicación</a></li>
+              </ul>
+            </nav>
+            <nav aria-label="Enlaces">
+              <p class="site-footer__column-title">Enlaces</p>
+              <ul class="site-footer__links">
+                <li><a href="https://fiis.unas.edu.pe/" target="_blank" rel="noreferrer" class="site-footer__link break-anywhere">Web FIIS</a></li>
+                <li><a href="https://www.unas.edu.pe/" target="_blank" rel="noreferrer" class="site-footer__link break-anywhere">Portal UNAS</a></li>
+                <li><a href="mailto:fiis@unas.edu.pe" class="site-footer__link break-anywhere">fiis@unas.edu.pe</a></li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <div class="site-footer__edge" aria-hidden="true"></div>
+        <div class="section-shell site-footer__legal">
+          <p>© 2026 Ciclo de Conferencias FIIS · UNAS</p>
+          <p>Organizado por la Facultad de Ingeniería en Informática y Sistemas</p>
+        </div>
+      </footer>
+
+      <button type="button" class="back-to-top" id="back-to-top" aria-label="Volver arriba">
+        <i data-icon="ArrowUp" data-size="16"></i>
+      </button>
+    </div>
+
+    <div id="inscription-root"></div>
+
+    <script src="assets/js/icons.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/landing.js"></script>
+    <script src="assets/js/inscription.js"></script>
+  </body>
+</html>
