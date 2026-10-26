@@ -14,8 +14,10 @@
     <link rel="stylesheet" href="../assets/css/admin.css" />
     <script src="../assets/js/auth.js"></script>
     <script>
+      // En Vercel el login se sirve como "/admin" (sin barra final): "panel.html" a secas apuntaría a "/panel.html".
+      window.PANEL_URL = (/(\.html|\/)$/.test(location.pathname) ? "" : location.pathname.split("/").pop() + "/") + "panel.html#/panel"
       // Con sesión válida no tiene sentido mostrar el login.
-      if (FIISAuth.getSession()) location.replace("panel.html#/panel")
+      if (FIISAuth.getSession()) location.replace(PANEL_URL)
     </script>
   </head>
   <body>
@@ -97,7 +99,7 @@
           setTimeout(() => {
             const result = FIISAuth.login(correo, password.value)
             if (result.ok) {
-              location.replace("panel.html#/panel")
+              location.replace(PANEL_URL)
               return
             }
             message.textContent = result.message
