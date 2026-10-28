@@ -1,0 +1,12 @@
+{
+  "name": "prototipo-fiis-css",
+  "private": true,
+  "description": "Compila assets/css/app.css con el mismo Tailwind que el sistema real.",
+  "scripts": {
+    "build": "tailwindcss -i input.css -o ../../assets/css/app.css"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

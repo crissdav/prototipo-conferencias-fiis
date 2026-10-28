@@ -1,7 +1,15 @@
-/* Sitio público: secciones, menú, animaciones y navegación activa. */
+/*
+ * Sitio público: About, Speakers, Agenda, Registration, Faq y Location con los mismos className del
+ * JSX original, más las animaciones de motion (Reveal, HeroFade, Faq, MobileNavSheet, BackToTop).
+ * "<!---->" separa los nodos de texto donde React los separa ({valor} junto a texto fijo).
+ */
 ;(function () {
   const { event, links, highlights, pillars, speakers, agenda, registrationSteps, tickets, faqs } = window.FIIS
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
+  const C = "<!---->"
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  /** springSoft / springUI de motionPresets.ts (resortes sin rebote), aproximados con una curva. */
+  const EASE = "cubic-bezier(0.22, 1, 0.36, 1)"
 
   const navLinks = [
     { href: "#evento", label: "El evento", id: "evento" },
@@ -13,67 +21,64 @@
     { href: "#ubicacion", label: "Ubicación", id: "ubicacion" },
   ]
 
-  // ── Piezas comunes ───────────────────────────────────────────
+  // ── ui.tsx ───────────────────────────────────────────────────
 
-  function heading(eyebrow, title, lead, center) {
-    return `
-      <div class="section-heading${center ? " section-heading--center" : ""}">
-        <p class="eyebrow">${esc(eyebrow)}</p>
-        <h2 class="section-title">${esc(title)}</h2>
-        ${lead ? `<div class="section-lead">${lead}</div>` : ""}
-      </div>`
+  function SectionHeading({ eyebrow, title, children, align }) {
+    const alignClass = align === "center" ? "mx-auto text-center" : ""
+    return `<div class="max-w-3xl xl:max-w-4xl ${alignClass} ">
+      <p class="eyebrow ">${esc(eyebrow)}</p>
+      <h2 class="section-title mt-2 font-sans font-semibold text-ink sm:mt-2.5 ">${esc(title)}</h2>
+      ${children ? `<div class="text-body mt-4 text-[0.975rem] sm:mt-5 sm:text-base text-mist">${children}</div>` : ""}
+    </div>`
   }
 
-  function reveal(html, delay, tag) {
-    const t = tag || "div"
-    return `<${t} class="reveal" style="transition-delay:${delay || 0}ms">${html}</${t}>`
-  }
+  const toneClass = { white: "section-tone-white", tint: "section-tone-tint", sky: "section-tone-sky", deep: "section-tone-deep", plain: "section-tone-plain" }
+  const Section = (id, tone, inner) => `<section id="${id}" class="section-py ${toneClass[tone]}  "><div class="section-shell">${inner}</div></section>`
 
-  function section(id, tone, inner) {
-    return `<section id="${id}" class="section-py section-tone-${tone}"><div class="section-shell">${inner}</div></section>`
-  }
+  /** Reveal.tsx: aparece al entrar en pantalla (opacity 0 → 1, y 16 → 0). */
+  const Reveal = (inner, delay) =>
+    `<div data-reveal="${delay || 0}" style="opacity: 0; transform: ${reduceMotion ? "none" : "translateY(16px)"}">${inner}</div>`
 
-  // ── Secciones ────────────────────────────────────────────────
+  // ── About.tsx ────────────────────────────────────────────────
 
-  function about() {
-    const stats = highlights
-      .map(
-        (h) => `
-        <div class="stat-card">
-          <dt class="sr-only">${esc(h.label)}</dt>
-          <dd class="stat-card__value">${esc(h.value)}</dd>
-          <dd class="stat-card__label">${esc(h.label)}</dd>
-        </div>`,
-      )
-      .join("")
-    const cards = pillars
-      .map((p, i) =>
-        reveal(
-          `<div class="surface-card feature-card h-full">
-            <span class="milestone-card__icon">${icon(p.icon, { size: 18 })}</span>
-            <h3 class="card-title">${esc(p.title)}</h3>
-            <p class="card-text">${esc(p.text)}</p>
-          </div>`,
-          i * 60,
-        ),
-      )
-      .join("")
-    return section(
+  function About() {
+    return Section(
       "evento",
       "white",
-      `<div class="about-grid">
-        ${reveal(
-          heading(
-            "El evento",
-            "Un punto de encuentro para el talento digital de la región",
-            "La Facultad de Ingeniería en Informática y Sistemas de la UNAS organiza su ciclo de conferencias y talleres para acercar a estudiantes, docentes y profesionales a las tecnologías que hoy mueven la industria.",
-          ),
+      `<div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-14">
+        ${Reveal(
+          SectionHeading({
+            eyebrow: "El evento",
+            title: "Un punto de encuentro para el talento digital de la región",
+            children:
+              "La Facultad de Ingeniería en Informática y Sistemas de la UNAS organiza su ciclo de conferencias y talleres para acercar a estudiantes, docentes y profesionales a las tecnologías que hoy mueven la industria.",
+          }),
         )}
-        ${reveal(`<dl class="stats-grid">${stats}</dl>`, 80)}
+        ${Reveal(
+          `<dl class="grid grid-cols-3 gap-3">${highlights
+            .map(
+              (item) => `<div class="stat-card"><dt class="sr-only">${esc(item.label)}</dt><dd class="stat-card__value">${esc(item.value)}</dd><dd class="stat-card__label">${esc(item.label)}</dd></div>`,
+            )
+            .join("")}</dl>`,
+          80,
+        )}
       </div>
-      <div class="bento-grid mt-12 sm-cols-2 lg-cols-4">${cards}</div>`,
+      <div class="bento-grid mt-12 sm:grid-cols-2 lg:grid-cols-4">${pillars
+        .map((pillar, index) =>
+          Reveal(
+            `<div class="surface-card  feature-card h-full p-6">
+              <span class="milestone-card__icon">${icon(pillar.icon, { size: 18 })}</span>
+              <h3 class="mt-5 text-lg font-semibold tracking-tight text-ink">${esc(pillar.title)}</h3>
+              <p class="text-body mt-2 text-sm text-mist">${esc(pillar.text)}</p>
+            </div>`,
+            index * 60,
+          ),
+        )
+        .join("")}</div>`,
     )
   }
+
+  // ── Speakers.tsx ─────────────────────────────────────────────
 
   function initials(name) {
     return name
@@ -85,83 +90,73 @@
       .toUpperCase()
   }
 
-  function speakersSection() {
+  function Speakers() {
     const pending = speakers.some((s) => !s.confirmed)
-    const cards = speakers
-      .map((s, i) =>
-        reveal(
-          `<div class="surface-card speaker-card h-full">
-            <div class="speaker-avatar">${s.confirmed ? `<span>${initials(s.name)}</span>` : icon("UserRound", { size: 26 })}</div>
-            <div style="min-width:0">
-              <h3 class="speaker-name">${esc(s.name)}</h3>
-              <p class="speaker-topic">${esc(s.topic)} · <span>${esc(s.org)}</span></p>
-            </div>
-          </div>`,
-          i * 50,
-        ),
-      )
-      .join("")
-    return section(
+    return Section(
       "ponentes",
       "sky",
-      reveal(
-        heading(
-          "Ponentes",
-          "Voces de la industria y la academia",
-          pending
+      Reveal(
+        SectionHeading({
+          eyebrow: "Ponentes",
+          title: "Voces de la industria y la academia",
+          children: pending
             ? "Estamos confirmando a nuestros ponentes. Muy pronto anunciaremos los nombres de cada conferencia y taller."
             : "Conoce a quienes compartirán su experiencia en esta edición.",
-        ),
-      ) + `<div class="bento-grid mt-12 sm-cols-2 lg-cols-3">${cards}</div>`,
+        }),
+      ) +
+        `<div class="bento-grid mt-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">${speakers
+          .map((speaker, index) =>
+            Reveal(
+              `<div class="surface-card  speaker-card flex h-full items-center gap-4 p-5">
+                <div class="speaker-avatar">${speaker.confirmed ? `<span class="text-lg font-semibold">${initials(speaker.name)}</span>` : icon("UserRound", { size: 26 })}</div>
+                <div class="min-w-0">
+                  <h3 class="font-semibold tracking-tight ${speaker.confirmed ? "text-ink" : "text-ink/55"}">${esc(speaker.name)}</h3>
+                  <p class="mt-0.5 text-sm text-mist">${esc(speaker.topic)}${C} · <span class="font-medium text-leaf">${esc(speaker.org)}</span></p>
+                </div>
+              </div>`,
+              index * 50,
+            ),
+          )
+          .join("")}</div>`,
     )
   }
 
-  function capacityMeter(enrolled, capacity) {
+  // ── Agenda.tsx ───────────────────────────────────────────────
+
+  function CapacityMeter(enrolled, capacity) {
     const filled = Math.min(capacity, Math.max(0, enrolled))
     const ratio = capacity === 0 ? 0 : filled / capacity
-    return `
-      <div class="agenda-capacity">
-        <div class="agenda-capacity__row">
-          <span>Aforo</span>
-          <span class="agenda-capacity__count">${filled}<span class="agenda-capacity__total">/${capacity}</span></span>
-        </div>
-        <div class="agenda-capacity__track" role="meter" aria-valuenow="${filled}" aria-valuemin="0" aria-valuemax="${capacity}" aria-label="${filled} de ${capacity} personas inscritas">
-          <div class="agenda-capacity__fill" style="width:${ratio * 100}%"></div>
-        </div>
-      </div>`
+    return `<div class="agenda-capacity">
+      <div class="agenda-capacity__row"><span>Aforo</span><span class="agenda-capacity__count">${filled}<span class="agenda-capacity__total">/${C}${capacity}</span></span></div>
+      <div class="agenda-capacity__track" role="meter" aria-valuenow="${filled}" aria-valuemin="0" aria-valuemax="${capacity}" aria-label="${filled} de ${capacity} personas inscritas">
+        <div class="agenda-capacity__fill" style="width: ${ratio * 100}%"></div>
+      </div>
+    </div>`
   }
 
-  function trackList(kind) {
-    const groups = agenda
-      .map((day) => ({ ...day, items: day.items.filter((item) => item.kind === kind) }))
-      .filter((day) => day.items.length > 0)
-
+  function TrackList(kind) {
+    const groups = agenda.map((day) => ({ ...day, items: day.items.filter((item) => item.kind === kind) })).filter((day) => day.items.length > 0)
     return `<div class="agenda-groups">${groups
       .map(
-        (day) => `
-        <div>
+        (day) => `<div>
           <h3 class="agenda-day"><span class="agenda-day__badge">${day.day}</span><span class="agenda-day__date">${day.date}</span></h3>
           <ul class="agenda-cards">${day.items
             .map((item) => {
               let extra = ""
               if (item.capacity) {
-                const full = (item.enrolled || 0) >= item.capacity
                 extra =
-                  capacityMeter(item.enrolled || 0, item.capacity) +
-                  (full
+                  CapacityMeter(item.enrolled || 0, item.capacity) +
+                  ((item.enrolled || 0) >= item.capacity
                     ? `<button type="button" class="btn-primary agenda-card__cta" disabled>Cupos agotados</button>`
-                    : `<button type="button" class="btn-primary agenda-card__cta" data-inscription data-workshop="${item.id}">Inscribirme<span class="sr-only"> en ${esc(item.title)}</span>${icon("ArrowUpRight", { size: 16 })}</button>`)
+                    : `<button type="button" class="btn-primary agenda-card__cta" data-inscription data-workshop="${item.id}">Inscribirme<span class="sr-only"> en ${C}${esc(item.title)}</span>${icon("ArrowUpRight", { size: 16 })}</button>`)
               }
-              return `
-              <li class="h-full">
-                <div class="surface-card agenda-card">
-                  <time class="agenda-card__time" datetime="${item.time}">${item.time}</time>
-                  <p class="agenda-card__title">${esc(item.title)}</p>
-                  ${item.speaker ? `<p class="agenda-card__meta">${esc(item.speaker)}</p>` : ""}
-                  ${item.location ? `<p class="agenda-card__meta">${esc(item.location)}</p>` : ""}
-                  ${extra}
-                </div>
-              </li>`
+              return `<li class="h-full"><div class="surface-card  agenda-card">
+                <time class="agenda-card__time" datetime="${item.time}">${item.time}</time>
+                <p class="agenda-card__title">${esc(item.title)}</p>
+                ${item.speaker ? `<p class="agenda-card__meta">${esc(item.speaker)}</p>` : ""}
+                ${item.location ? `<p class="agenda-card__meta">${esc(item.location)}</p>` : ""}
+                ${extra}
+              </div></li>`
             })
             .join("")}</ul>
         </div>`,
@@ -169,133 +164,128 @@
       .join("")}</div>`
   }
 
-  function conferencePass() {
+  function ConferencePass() {
     const talkCount = agenda.reduce((sum, day) => sum + day.items.filter((i) => i.kind === "conferencia").length, 0)
-    return `
-      <div class="conference-pass">
-        <div class="conference-pass__body">
-          <h3 class="conference-pass__title">Un solo pago, las ${talkCount} ponencias de los 2 días</h3>
-          <p class="conference-pass__text">
-            No pagas por ponencia: con tu inscripción a la conferencia entras a todas las charlas del ${agenda[0].date.toLowerCase()}
-            y del ${agenda[agenda.length - 1].date.toLowerCase()}. Los talleres se inscriben aparte, según cupo.
-          </p>
-          <ul class="conference-pass__prices">${tickets
-            .map((t) => `<li><span>${esc(t.name)}</span><strong>${esc(t.prices.conferencia)}</strong></li>`)
-            .join("")}</ul>
-        </div>
-        <button type="button" class="btn-primary conference-pass__cta" data-inscription data-activity="conferencia">
-          Inscribirme a la conferencia ${icon("ArrowUpRight", { size: 16 })}
-        </button>
-      </div>`
+    return `<div class="conference-pass">
+      <div class="min-w-0">
+        <h3 class="conference-pass__title">Un solo pago, las ${C}${talkCount}${C} ponencias de los 2 días</h3>
+        <p class="conference-pass__text">No pagas por ponencia: con tu inscripción a la conferencia entras a todas las charlas del ${C}${agenda[0].date.toLowerCase()}${C} ${C}y del ${C}${agenda[agenda.length - 1].date.toLowerCase()}${C}. Los talleres se inscriben aparte, según cupo.</p>
+        <ul class="conference-pass__prices">${tickets.map((t) => `<li><span>${esc(t.name)}</span><strong>${esc(t.prices.conferencia)}</strong></li>`).join("")}</ul>
+      </div>
+      <button type="button" class="btn-primary conference-pass__cta" data-inscription data-activity="conferencia">Inscribirme a la conferencia${icon("ArrowUpRight", { size: 16 })}</button>
+    </div>`
   }
 
-  function agendaSection() {
+  function Agenda() {
     const tracks = [
-      { id: "conferencias", label: "Conferencias", kind: "conferencia", tone: "white", text: "Charlas magistrales y paneles. Los horarios son tentativos hasta que el comité confirme el programa." },
-      { id: "talleres", label: "Talleres", kind: "taller", tone: "plain", text: "Espacios hands-on con aforo limitado. El horario final se publicará con la confirmación de facilitadores." },
+      { id: "conferencias", label: "Conferencias", kind: "conferencia", text: "Charlas magistrales y paneles. Los horarios son tentativos hasta que el comité confirme el programa." },
+      { id: "talleres", label: "Talleres", kind: "taller", text: "Espacios hands-on con aforo limitado. El horario final se publicará con la confirmación de facilitadores." },
     ]
     return `<div id="programa">${tracks
-      .map((t) =>
-        section(
-          t.id,
-          t.tone,
-          reveal(heading("Programa", t.label, t.text)) +
-            reveal(`<div class="mt-10">${trackList(t.kind)}</div>`, 80) +
-            (t.kind === "conferencia" ? reveal(conferencePass(), 120) : ""),
+      .map((track, index) =>
+        Section(
+          track.id,
+          index === 1 ? "plain" : "white",
+          Reveal(SectionHeading({ eyebrow: "Programa", title: track.label, children: track.text })) +
+            Reveal(`<div class="mt-10">${TrackList(track.kind)}</div>`, 80) +
+            (track.kind === "conferencia" ? Reveal(ConferencePass(), 120) : ""),
         ),
       )
       .join("")}</div>`
   }
 
-  function registration() {
-    const steps = registrationSteps
-      .map((s, i) =>
-        reveal(
-          `<div class="step-card">
-            <div class="step-head"><span class="step-card__number">${i + 1}</span>${icon(s.icon, { size: 20 })}</div>
-            <h3 class="card-title">${esc(s.title)}</h3>
-            <p class="card-text">${esc(s.text)}</p>
-          </div>`,
-          i * 60,
-          "li",
-        ),
-      )
-      .join("")
-    const ticketCards = tickets
-      .map((t, i) =>
-        reveal(
-          `<div class="surface-card ticket-card">
-            <h3 class="ticket-name">${esc(t.name)}</h3>
-            <p class="ticket-note">${esc(t.note)}</p>
-            <dl class="ticket-prices">
-              <div class="ticket-prices__row"><dt>Conferencia (2 días)</dt><dd class="ticket-price">${esc(t.prices.conferencia)}</dd></div>
-              <div class="ticket-prices__row"><dt>Por taller</dt><dd class="ticket-price ticket-price--secondary">${esc(t.prices.taller)}</dd></div>
-            </dl>
-            <ul class="ticket-features">${t.features.map((f) => `<li>${icon("Check", { size: 16 })}${esc(f)}</li>`).join("")}</ul>
-            <button type="button" class="btn-primary" data-inscription data-ticket="${esc(t.name)}">Inscribirme ${icon("ArrowUpRight", { size: 16 })}</button>
-          </div>`,
-          i * 70,
-        ),
-      )
-      .join("")
-    return section(
+  // ── Registration.tsx ─────────────────────────────────────────
+
+  function Registration() {
+    return Section(
       "inscripcion",
       "white",
-      reveal(
-        heading(
-          "Inscripción",
-          "Tu lugar en cuatro pasos",
-          "Todo el proceso es digital: registro, pago, asistencia con QR y certificado verificable.",
-          true,
-        ),
+      Reveal(
+        SectionHeading({
+          eyebrow: "Inscripción",
+          title: "Tu lugar en cuatro pasos",
+          children: "Todo el proceso es digital: registro, pago, asistencia con QR y certificado verificable.",
+          align: "center",
+        }),
       ) +
-        `<ol class="bento-grid mt-12 sm-cols-2 lg-cols-4">${steps}</ol>
-        <div class="bento-grid tickets-grid sm-cols-2">${ticketCards}</div>`,
+        `<ol class="bento-grid mt-12 sm:grid-cols-2 lg:grid-cols-4">${registrationSteps
+          .map((step, index) =>
+            Reveal(
+              `<li class="step-card h-full">
+                <div class="flex items-center gap-3"><span class="step-card__number">${index + 1}</span>${icon(step.icon, { size: 20, cls: "text-leaf" })}</div>
+                <h3 class="mt-5 text-lg font-semibold tracking-tight text-ink">${esc(step.title)}</h3>
+                <p class="text-body mt-2 text-sm text-mist">${esc(step.text)}</p>
+              </li>`,
+              index * 60,
+            ),
+          )
+          .join("")}</ol>
+        <div class="bento-grid mx-auto mt-14 max-w-4xl sm:grid-cols-2">${tickets
+          .map((ticket, index) =>
+            Reveal(
+              `<div class="surface-card  ticket-card flex h-full flex-col p-7">
+                <h3 class="text-lg font-semibold tracking-tight text-ink">${esc(ticket.name)}</h3>
+                <p class="mt-1 text-sm text-mist">${esc(ticket.note)}</p>
+                <dl class="ticket-prices">
+                  <div class="ticket-prices__row"><dt>Conferencia (2 días)</dt><dd class="ticket-price">${esc(ticket.prices.conferencia)}</dd></div>
+                  <div class="ticket-prices__row"><dt>Por taller</dt><dd class="ticket-price ticket-price--secondary">${esc(ticket.prices.taller)}</dd></div>
+                </dl>
+                <ul class="mt-6 flex-1 space-y-3">${ticket.features
+                  .map((f) => `<li class="flex items-start gap-2.5 text-sm text-ink/85">${icon("Check", { size: 16, cls: "mt-0.5 shrink-0 text-leaf" })}${esc(f)}</li>`)
+                  .join("")}</ul>
+                <button type="button" class="btn-primary mt-8 w-full" data-inscription data-ticket="${esc(ticket.name)}">Inscribirme${icon("ArrowUpRight", { size: 16 })}</button>
+              </div>`,
+              index * 70,
+            ),
+          )
+          .join("")}</div>`,
     )
   }
 
-  function faqSection() {
-    const items = faqs
-      .map(
-        (f, i) => `
-        <li class="faq-item${i === 0 ? " is-open" : ""}">
-          <button type="button" class="faq-item__q" aria-expanded="${i === 0}" aria-controls="faq-${i}">
-            ${esc(f.q)}
-            <span class="faq-item__icon" aria-hidden="true">${icon("Plus", { size: 18 })}</span>
-          </button>
-          <div class="faq-item__panel" id="faq-${i}"><div><p class="faq-item__a text-body">${esc(f.a)}</p></div></div>
-        </li>`,
-      )
-      .join("")
-    return section(
+  // ── Faq.tsx ──────────────────────────────────────────────────
+
+  let faqAbierta = 0
+
+  function FaqItem(item, index) {
+    const isOpen = faqAbierta === index
+    return `<li class="faq-item">
+      <button type="button" class="faq-item__q" aria-expanded="${isOpen}" aria-controls="faq-${index}" data-faq="${index}">${esc(item.q)}<span class="faq-item__icon" aria-hidden="true" style="transform: ${isOpen ? "rotate(45deg)" : "none"}">${icon("Plus", { size: 18 })}</span></button>
+      ${isOpen ? `<div id="faq-${index}" class="overflow-hidden" style="height: auto; opacity: 1"><p class="faq-item__a text-body">${esc(item.a)}</p></div>` : ""}
+    </li>`
+  }
+
+  function Faq() {
+    return Section(
       "preguntas",
       "tint",
-      `<div class="faq-grid">
-        ${reveal(heading("Preguntas frecuentes", "Lo que más nos consultan", "¿No encuentras tu respuesta? Escríbenos y el comité organizador te responderá."))}
-        ${reveal(`<ul class="faq-list">${items}</ul>`, 80)}
+      `<div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
+        ${Reveal(SectionHeading({ eyebrow: "Preguntas frecuentes", title: "Lo que más nos consultan", children: "¿No encuentras tu respuesta? Escríbenos y el comité organizador te responderá." }))}
+        ${Reveal(`<ul class="faq-list">${faqs.map(FaqItem).join("")}</ul>`, 80)}
       </div>`,
     )
   }
 
-  function location() {
+  // ── Location.tsx ─────────────────────────────────────────────
+
+  function Location() {
     const items = [
       { icon: "CalendarDays", content: esc(event.datesLabel) },
       { icon: "MapPin", content: esc(`${event.venue}, Carretera Central km 1.21, ${event.city}`) },
-      { icon: "Phone", content: `<a href="tel:+5162561009">${links.phone}</a>` },
-      { icon: "Mail", content: `<a href="mailto:${links.email}" class="break-anywhere">${links.email}</a>` },
+      { icon: "Phone", content: `<a href="tel:+5162561009" class="font-medium transition hover:text-leaf">${links.phone}</a>` },
+      { icon: "Mail", content: `<a href="mailto:${links.email}" class="break-anywhere font-medium transition hover:text-leaf">${links.email}</a>` },
     ]
-    return section(
+    return Section(
       "ubicacion",
       "white",
-      `<div class="location-grid">
-        ${reveal(
-          heading("Ubicación", "Te esperamos en el campus principal UNAS", "El ciclo de conferencias se realiza en las instalaciones de la FIIS, en Tingo María.") +
-            `<ul class="info-list">${items
-              .map((it) => `<li class="glass-surface info-item"><span class="info-icon">${icon(it.icon, { size: 16 })}</span><span>${it.content}</span></li>`)
+      `<div class="grid gap-10 sm:gap-12 lg:grid-cols-2 lg:items-start lg:gap-14">
+        ${Reveal(
+          SectionHeading({ eyebrow: "Ubicación", title: "Te esperamos en el campus principal UNAS", children: "El ciclo de conferencias se realiza en las instalaciones de la FIIS, en Tingo María." }) +
+            `<ul class="mt-8 space-y-3">${items
+              .map((it) => `<li class="glass-surface flex items-center gap-3 rounded-2xl p-3.5 text-sm text-ink"><span class="info-icon">${icon(it.icon, { size: 16 })}</span><span>${it.content}</span></li>`)
               .join("")}</ul>`,
         )}
-        ${reveal(
-          `<div class="surface-card map-card">
+        ${Reveal(
+          `<div class="surface-card  overflow-hidden p-0">
             <div class="contact-map">
               <iframe title="Mapa de la FIIS en el campus UNAS, Tingo María" src="${links.maps}" class="contact-map__frame" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
               <a href="${links.mapsOpen}" target="_blank" rel="noreferrer" class="contact-map__open">Abrir en Google Maps</a>
@@ -307,22 +297,21 @@
     )
   }
 
-  document.getElementById("secciones").innerHTML =
-    about() + speakersSection() + agendaSection() + registration() + faqSection() + location()
+  document.getElementById("secciones").outerHTML = About() + Speakers() + Agenda() + Registration() + Faq() + Location()
 
-  // ── Navegación ───────────────────────────────────────────────
+  // ── Navbar.tsx ───────────────────────────────────────────────
 
-  document.getElementById("nav-desktop").innerHTML =
-    navLinks.map((l) => `<a href="${l.href}" class="nav-link" data-section="${l.id}">${l.label}</a>`).join("") +
-    `<button type="button" class="nav-desktop-cta btn-primary btn-hint" data-inscription>Inscríbete ahora <i data-icon="ArrowUpRight" data-size="16" class="btn-hint__icon"></i></button>`
-
-  document.getElementById("nav-mobile").innerHTML = navLinks
-    .map((l) => `<a href="${l.href}" class="mobile-nav-link" data-section="${l.id}" data-close-nav>${l.label}</a>`)
-    .join("")
-
+  let active = ""
+  const navDesktop = document.getElementById("nav-desktop")
+  function renderNavDesktop() {
+    navDesktop.innerHTML =
+      navLinks.map((item) => `<a href="${item.href}" class="nav-link rounded-lg ${active === item.id ? "nav-link-active text-leaf" : "text-ink/70"}">${item.label}</a>`).join("") +
+      `<button type="button" class="nav-desktop-cta btn-primary btn-hint ml-3" data-inscription>Inscríbete ahora${icon("ArrowUpRight", { size: 16, cls: "btn-hint__icon" })}</button>`
+  }
+  renderNavDesktop()
   hydrateIcons()
 
-  // ── Fondo animado del hero (FluidMorphBg con SMIL) ───────────
+  // ── FluidMorphBg.tsx: siete capas que cambian de forma (motion animate d) ──
 
   const pathsData = [
     ["M -84.52,-81.13 C -94.62,-73.4 -88.88,-59.55 -90.33,-48.91 -89.29,27.31 -89.61,103.5 -88.33,179.8 -85.99,416.1 -81.32,888.9 -81.32,888.9 -81.32,888.9 974.5,888.7 1587,891.9 1518,719.9 1487,644 1429,533 1388,437.7 1447,259.7 1400,187 1362,132 1270,90.53 1207,39.93 1161,2.932 1071,-74.45 1071,-74.45 1071,-74.45 914.5,-77.77 848.2,-80.17 537.6,-80.84 227,-81.38 -83.6,-81.6 -83.91,-81.44 -84.21,-81.29 -84.52,-81.13 Z",
@@ -341,172 +330,290 @@
      "M -85.59,444.4 -85.59,890.6 546.9,895.6 C 546.9,895.6 517.4,695.4 339.9,593.4 187.7,505.9 57.98,629.2 -85.59,444.4 Z"],
   ]
   const colors = ["#014c90", "#013d75", "#014c90", "#021e46", "#014c90", "#013d75", "#021e46"]
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const duration = 18
+  document.getElementById("fluid-bg").innerHTML = `<svg class="absolute inset-0 h-full w-full object-cover" preserveAspectRatio="none" viewBox="0 0 1440 800" aria-hidden="true">${pathsData
+    .map(([a, b], index) => {
+      const dur = 18 + (index % 3) * 0.5
+      const delay = (index % 4) * 0.2
+      const anim = reduceMotion
+        ? ""
+        : `<animate attributeName="d" values="${a};${b};${a}" dur="${dur * 2}s" begin="${delay}s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>`
+      return `<path d="${a}" fill="${colors[index % colors.length]}" opacity="0.78">${anim}</path>`
+    })
+    .join("")}</svg>`
 
-  document.getElementById("fluid-bg").innerHTML = `
-    <svg preserveAspectRatio="none" viewBox="0 0 1440 800" aria-hidden="true">${pathsData
-      .map(([a, b], index) => {
-        const pathDuration = duration + (index % 3) * 0.5
-        const delay = (index % 4) * 0.2
-        const anim = reduceMotion
-          ? ""
-          : `<animate attributeName="d" values="${a};${b};${a}" dur="${pathDuration * 2}s" begin="${delay}s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>`
-        return `<path d="${a}" fill="${colors[index % colors.length]}" opacity="0.78">${anim}</path>`
-      })
-      .join("")}</svg>`
+  // ── HeroFade: entrada escalonada del hero ────────────────────
 
-  // ── Altura del header (--header-offset) ──────────────────────
+  document.querySelectorAll("[data-hero]").forEach((el) => {
+    const delay = reduceMotion ? 0 : Number(el.dataset.hero) * 60
+    el.style.transition = `opacity ${reduceMotion ? "350ms ease-out" : `400ms ${EASE}`} ${delay}ms, transform 400ms ${EASE} ${delay}ms`
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        el.style.opacity = "1"
+        el.style.transform = "none"
+      }),
+    )
+  })
+
+  // ── useHeaderOffset ──────────────────────────────────────────
 
   const header = document.getElementById("site-header")
-  const setOffset = () => document.documentElement.style.setProperty("--header-offset", `${header.querySelector(".site-header__bar").offsetHeight}px`)
+  const setOffset = () => document.documentElement.style.setProperty("--header-offset", `${header.offsetHeight}px`)
   setOffset()
   window.addEventListener("resize", setOffset, { passive: true })
-  if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header.querySelector(".site-header__bar"))
+  if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header)
 
-  // ── Sección activa ───────────────────────────────────────────
+  // ── useActiveSection ─────────────────────────────────────────
 
   const sections = navLinks.map((l) => document.getElementById(l.id)).filter(Boolean)
   let raf = 0
   function updateActive() {
     cancelAnimationFrame(raf)
     raf = requestAnimationFrame(() => {
-      const offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-offset")) || 72
-      const line = offset + 20
+      const offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-offset"))
+      const line = (Number.isFinite(offset) && offset > 0 ? offset : 72) + 20
       let current = ""
       for (const s of sections) if (s.getBoundingClientRect().top <= line) current = s.id
-      document.querySelectorAll("[data-section]").forEach((a) => {
-        const on = a.dataset.section === current
-        a.classList.toggle(a.classList.contains("mobile-nav-link") ? "mobile-nav-link-active" : "nav-link-active", on)
-      })
+      if (current !== active) {
+        active = current
+        renderNavDesktop()
+        renderNavMobile()
+      }
     })
   }
   updateActive()
   window.addEventListener("scroll", updateActive, { passive: true })
   window.addEventListener("resize", updateActive, { passive: true })
 
-  // ── Reveal al hacer scroll ───────────────────────────────────
+  // ── Reveal: whileInView, una sola vez ────────────────────────
 
-  const reveals = document.querySelectorAll(".reveal")
+  const reveals = document.querySelectorAll("[data-reveal]")
+  const mostrar = (el) => {
+    const delay = Number(el.dataset.reveal)
+    el.style.transition = reduceMotion ? `opacity 280ms ease-out ${delay}ms` : `opacity 400ms ${EASE} ${delay}ms, transform 400ms ${EASE} ${delay}ms`
+    el.style.opacity = "1"
+    el.style.transform = "none"
+  }
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver(
-      (entries) => {
+      (entries) =>
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            e.target.classList.add("is-visible")
+            mostrar(e.target)
             io.unobserve(e.target)
           }
-        })
-      },
+        }),
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
     )
     reveals.forEach((el) => io.observe(el))
-  } else {
-    reveals.forEach((el) => el.classList.add("is-visible"))
-  }
+  } else reveals.forEach(mostrar)
 
-  // ── Menú móvil (hoja inferior que se arrastra para cerrar) ───
+  // ── MobileNavSheet.tsx: hoja inferior que se arrastra para cerrar ──
 
   const menuBtn = document.getElementById("nav-menu-btn")
-  const sheet = document.getElementById("mobile-nav")
-  const scrim = document.getElementById("mobile-nav-scrim")
+  const sheetRoot = document.getElementById("mobile-nav-root")
   let navOpen = false
 
+  function renderNavMobile() {
+    const grupo = sheetRoot.querySelector(".mobile-nav-group")
+    if (!grupo) return
+    grupo.querySelectorAll("a").forEach((a) => {
+      a.className = `mobile-nav-link ${a.dataset.id === active ? "mobile-nav-link-active" : ""}`
+    })
+  }
+
   function setNav(open) {
+    if (open === navOpen) return
     navOpen = open
-    header.classList.toggle("mobile-nav-open", open)
     menuBtn.setAttribute("aria-expanded", String(open))
     menuBtn.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú")
     menuBtn.innerHTML = icon(open ? "X" : "Menu", { size: 18 })
     document.body.style.overflow = open ? "hidden" : ""
-    sheet.style.transform = ""
-    scrim.style.opacity = ""
+    if (open) {
+      sheetRoot.innerHTML = `
+        <button type="button" aria-label="Cerrar menú" class="mobile-nav-scrim fixed inset-0 z-40 lg:hidden" style="opacity: 0" data-scrim></button>
+        <div id="mobile-nav" role="dialog" aria-modal="true" aria-label="Navegación móvil" class="mobile-nav-sheet fixed inset-x-0 bottom-0 z-[45] flex w-full max-h-[min(88dvh,calc(100dvh-0.5rem))] flex-col overflow-hidden lg:hidden" style="transform: translateY(${innerHeight}px)">
+          <div class="mobile-nav-grab flex shrink-0 cursor-grab justify-center pt-2.5 pb-2 active:cursor-grabbing" aria-hidden="true"><div class="h-1 w-10 rounded-full bg-slate-300/90"></div></div>
+          <div class="mobile-nav-body overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <nav aria-label="Móvil">
+              <div class="mobile-nav-group">${navLinks
+                .map(
+                  (item, index) =>
+                    `<a href="${item.href}" data-id="${item.id}" data-close-nav class="mobile-nav-link ${active === item.id ? "mobile-nav-link-active" : ""}" style="opacity: 0; transform: translateY(6px); transition: opacity 350ms ${EASE} ${index * 30}ms, transform 350ms ${EASE} ${index * 30}ms">${item.label}</a>`,
+                )
+                .join("")}</div>
+              <div class="mobile-nav-footer"><button type="button" class="btn-primary w-full" data-inscription data-close-nav>Inscríbete ahora</button></div>
+            </nav>
+          </div>
+        </div>`
+      const scrim = sheetRoot.querySelector("[data-scrim]")
+      const sheet = sheetRoot.querySelector("#mobile-nav")
+      sheet.getBoundingClientRect()
+      sheet.style.transition = `transform 350ms ${EASE}`
+      scrim.style.transition = `opacity 350ms ${EASE}`
+      sheet.style.transform = "translateY(0px)"
+      scrim.style.opacity = "1"
+      sheet.querySelectorAll(".mobile-nav-link").forEach((a) => {
+        a.style.opacity = "1"
+        a.style.transform = "none"
+      })
+      activarArrastre(sheet, scrim)
+    } else {
+      const scrim = sheetRoot.querySelector("[data-scrim]")
+      const sheet = sheetRoot.querySelector("#mobile-nav")
+      if (!sheet) return
+      sheet.style.transition = `transform 320ms cubic-bezier(0.34, 1.2, 0.64, 1)`
+      scrim.style.transition = `opacity 320ms ${EASE}`
+      sheet.style.transform = `translateY(${innerHeight}px)`
+      scrim.style.opacity = "0"
+      setTimeout(() => {
+        if (!navOpen) sheetRoot.innerHTML = ""
+      }, 340)
+    }
   }
-  window.closeMobileNav = () => navOpen && setNav(false)
+  window.closeMobileNav = () => setNav(false)
+
+  function activarArrastre(sheet, scrim) {
+    sheet.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || reduceMotion) return
+      const startY = e.clientY
+      const samples = [{ y: startY, t: e.timeStamp }]
+      let dragging = false
+      let delta = 0
+      const onMove = (ev) => {
+        delta = ev.clientY - startY
+        samples.push({ y: ev.clientY, t: ev.timeStamp })
+        if (samples.length > 6) samples.shift()
+        if (!dragging) {
+          if (Math.abs(delta) < 10) return
+          dragging = true
+          sheet.style.transition = "none"
+        }
+        const h = innerHeight
+        const y = delta < 0 ? -((-delta * h * 0.55) / (h + 0.55 * -delta)) : delta
+        sheet.style.transform = `translateY(${y}px)`
+        scrim.style.opacity = String(Math.min(1, Math.max(0, 1 - y / h)))
+      }
+      const finish = () => {
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", finish)
+        window.removeEventListener("pointercancel", finish)
+        if (!dragging) return
+        const swallow = (c) => {
+          c.preventDefault()
+          c.stopPropagation()
+          window.removeEventListener("click", swallow, true)
+        }
+        window.addEventListener("click", swallow, true)
+        setTimeout(() => window.removeEventListener("click", swallow, true), 0)
+        const first = samples[0]
+        const last = samples[samples.length - 1]
+        const dt = (last.t - first.t) / 1000
+        const velocity = dt > 0 ? (last.y - first.y) / dt : 0
+        const projected = delta + ((velocity / 1000) * 0.998) / (1 - 0.998)
+        const threshold = velocity > 180 ? 28 : 160
+        if (velocity >= -80 && projected > threshold) setNav(false)
+        else {
+          sheet.style.transition = `transform 350ms ${EASE}`
+          scrim.style.transition = `opacity 350ms ${EASE}`
+          sheet.style.transform = "translateY(0px)"
+          scrim.style.opacity = "1"
+        }
+      }
+      window.addEventListener("pointermove", onMove)
+      window.addEventListener("pointerup", finish)
+      window.addEventListener("pointercancel", finish)
+    })
+  }
 
   menuBtn.addEventListener("click", () => setNav(!navOpen))
-  scrim.addEventListener("click", () => setNav(false))
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && navOpen) setNav(false)
+  sheetRoot.addEventListener("click", (e) => {
+    if (e.target.closest("[data-scrim]")) setNav(false)
   })
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-close-nav]")) setNav(false)
   })
-
-  sheet.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || reduceMotion) return
-    const startY = e.clientY
-    const samples = [{ y: startY, t: e.timeStamp }]
-    let dragging = false
-    let delta = 0
-
-    function onMove(ev) {
-      delta = ev.clientY - startY
-      samples.push({ y: ev.clientY, t: ev.timeStamp })
-      if (samples.length > 6) samples.shift()
-      if (!dragging) {
-        if (Math.abs(delta) < 10) return
-        dragging = true
-        sheet.classList.add("is-dragging")
-      }
-      const y = delta < 0 ? -((-delta * innerHeight * 0.55) / (innerHeight + 0.55 * -delta)) : delta
-      sheet.style.transform = `translateY(${y}px)`
-      scrim.style.opacity = String(Math.max(0, 1 - y / innerHeight))
-    }
-
-    function finish() {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", finish)
-      window.removeEventListener("pointercancel", finish)
-      sheet.classList.remove("is-dragging")
-      if (!dragging) return
-      const swallow = (c) => {
-        c.preventDefault()
-        c.stopPropagation()
-        window.removeEventListener("click", swallow, true)
-      }
-      window.addEventListener("click", swallow, true)
-      setTimeout(() => window.removeEventListener("click", swallow, true), 0)
-      const first = samples[0]
-      const last = samples[samples.length - 1]
-      const dt = (last.t - first.t) / 1000
-      const velocity = dt > 0 ? (last.y - first.y) / dt : 0
-      const projected = delta + ((velocity / 1000) * 0.998) / (1 - 0.998)
-      const threshold = velocity > 180 ? 28 : 160
-      if (velocity >= -80 && projected > threshold) setNav(false)
-      else {
-        sheet.style.transform = ""
-        scrim.style.opacity = ""
-      }
-    }
-
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", finish)
-    window.addEventListener("pointercancel", finish)
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && navOpen) setNav(false)
   })
 
-  // ── Preguntas frecuentes (una abierta a la vez) ──────────────
+  // ── Faq: una pregunta abierta a la vez, con altura animada ───
 
-  document.querySelectorAll(".faq-item__q").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const item = btn.closest(".faq-item")
-      const wasOpen = item.classList.contains("is-open")
-      document.querySelectorAll(".faq-item").forEach((li) => {
-        li.classList.remove("is-open")
-        li.querySelector(".faq-item__q").setAttribute("aria-expanded", "false")
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-faq]")
+    if (!btn) return
+    const index = Number(btn.dataset.faq)
+    const lista = btn.closest(".faq-list")
+    const anterior = faqAbierta
+    faqAbierta = anterior === index ? null : index
+
+    const cerrar = (i) => {
+      const li = lista.children[i]
+      const panel = li && li.querySelector(`#faq-${i}`)
+      const b = li && li.querySelector("[data-faq]")
+      if (!panel) return
+      b.setAttribute("aria-expanded", "false")
+      b.querySelector(".faq-item__icon").style.transform = "none"
+      panel.style.height = `${panel.offsetHeight}px`
+      panel.getBoundingClientRect()
+      panel.style.transition = `height 350ms ${EASE}, opacity 350ms ${EASE}`
+      panel.style.height = "0px"
+      panel.style.opacity = "0"
+      setTimeout(() => panel.remove(), 360)
+    }
+
+    if (anterior !== null) cerrar(anterior)
+    if (faqAbierta !== null) {
+      const li = lista.children[faqAbierta]
+      const b = li.querySelector("[data-faq]")
+      b.setAttribute("aria-expanded", "true")
+      const iconEl = b.querySelector(".faq-item__icon")
+      iconEl.style.transition = reduceMotion ? "" : `transform 350ms ${EASE}`
+      iconEl.style.transform = "rotate(45deg)"
+      li.insertAdjacentHTML("beforeend", `<div id="faq-${faqAbierta}" class="overflow-hidden" style="height: 0px; opacity: 0"><p class="faq-item__a text-body">${esc(faqs[faqAbierta].a)}</p></div>`)
+      const panel = li.lastElementChild
+      const alto = panel.scrollHeight
+      panel.style.transition = `height 350ms ${EASE}, opacity 350ms ${EASE}`
+      requestAnimationFrame(() => {
+        panel.style.height = `${alto}px`
+        panel.style.opacity = "1"
       })
-      if (!wasOpen) {
-        item.classList.add("is-open")
-        btn.setAttribute("aria-expanded", "true")
-      }
-    })
+      setTimeout(() => {
+        if (panel.isConnected) {
+          panel.style.transition = ""
+          panel.style.height = "auto"
+        }
+      }, 360)
+    }
   })
 
-  // ── Volver arriba ────────────────────────────────────────────
+  // ── BackToTop.tsx ────────────────────────────────────────────
 
-  const toTop = document.getElementById("back-to-top")
-  const onScroll = () => toTop.classList.toggle("is-visible", window.scrollY > 720)
-  onScroll()
-  window.addEventListener("scroll", onScroll, { passive: true })
-  toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }))
+  const topRoot = document.getElementById("back-to-top-root")
+  let topVisible = false
+  function onScrollTop() {
+    const visible = window.scrollY > 720
+    if (visible === topVisible) return
+    topVisible = visible
+    if (visible) {
+      topRoot.innerHTML = `<button type="button" aria-label="Volver arriba" class="back-to-top material-chip fixed z-40 flex items-center justify-center rounded-full text-leaf" style="opacity: 0; transform: scale(0.6); filter: blur(6px)">${icon("ArrowUp", { size: 16 })}</button>`
+      const b = topRoot.firstElementChild
+      b.getBoundingClientRect()
+      b.style.transition = `opacity 350ms ${EASE}, transform 350ms ${EASE}, filter 350ms ${EASE}`
+      b.style.opacity = "1"
+      b.style.transform = "none"
+      b.style.filter = "blur(0px)"
+      b.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }))
+    } else {
+      const b = topRoot.firstElementChild
+      if (!b) return
+      b.style.opacity = "0"
+      b.style.transform = "scale(0.6)"
+      b.style.filter = "blur(6px)"
+      setTimeout(() => {
+        if (!topVisible) topRoot.innerHTML = ""
+      }, 360)
+    }
+  }
+  onScrollTop()
+  window.addEventListener("scroll", onScrollTop, { passive: true })
 })()

@@ -7,12 +7,9 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Ingreso</title>
     <link rel="icon" href="../assets/logo-fiis.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="../assets/css/base.css" />
-    <link rel="stylesheet" href="../assets/css/admin.css" />
-    <script src="../assets/js/auth.js"></script>
+    <link rel="stylesheet" href="../assets/css/fonts.css?v=6" />
+    <link rel="stylesheet" href="../assets/css/app.css?v=6" />
+    <script src="../assets/js/auth.js?v=6"></script>
     <script>
       // En Vercel el login se sirve como "/admin" (sin barra final): "panel.html" a secas apuntaría a "/panel.html".
       window.PANEL_URL = (/(\.html|\/)$/.test(location.pathname) ? "" : location.pathname.split("/").pop() + "/") + "panel.html#/panel"
@@ -21,34 +18,37 @@
     </script>
   </head>
   <body>
-    <main class="admin-gate-fondo">
-      <section class="admin-gate" aria-labelledby="admin-login-title">
-        <a href="../index.html" class="admin-gate__logo" aria-label="Ciclo de Conferencias FIIS — sitio público">
-          <img src="../assets/logo-fiis.png" alt="" width="56" height="56" />
+    <!-- admin/page.tsx + AdminLogin.tsx, con los mismos className -->
+    <main class="admin-gate-fondo flex min-h-svh items-center justify-center px-4 py-10">
+      <section class="admin-gate relative" aria-labelledby="admin-login-title">
+        <a href="../index.html" class="admin-gate__logo flex w-full justify-center" aria-label="Ciclo de Conferencias FIIS — sitio público">
+          <img src="../assets/img/logo-fiis-96.webp" srcset="../assets/img/logo-fiis-64.webp 1x, ../assets/img/logo-fiis-96.webp 2x" alt="" width="56" height="56" decoding="async" data-nimg="1" style="color:transparent" class="h-14 w-14 object-contain" />
         </a>
         <h1 id="admin-login-title" class="admin-gate__title">Ingreso</h1>
         <p class="admin-gate__lead">Acceso del equipo de la FIIS.</p>
-        <p role="status" class="admin-gate__status" id="sesion-expirada" hidden>Tu sesión terminó. Vuelve a ingresar.</p>
+        <p role="status" class="mt-4 mb-0 rounded-xl bg-parchment px-3 py-2 text-sm text-ink" id="sesion-expirada" hidden>
+          Tu sesión terminó. Vuelve a ingresar.
+        </p>
 
-        <form class="admin-form" id="login-form" novalidate>
-          <label class="form-label">
+        <form class="mt-6 grid gap-4" id="login-form" novalidate>
+          <label class="grid gap-1.5 text-sm font-semibold text-ink">
             Correo
-            <input name="correo" type="email" autocomplete="username" autofocus spellcheck="false" class="field" />
-            <span class="form-error" data-error="email" hidden></span>
+            <input name="correo" type="email" autocomplete="username" autofocus spellcheck="false" class="field font-normal" aria-invalid="false" />
+            <span class="text-xs font-medium text-red-700" data-error="email" hidden></span>
           </label>
 
-          <label class="form-label">
+          <label class="grid gap-1.5 text-sm font-semibold text-ink">
             Contraseña
             <span class="admin-password">
-              <input name="password" type="password" autocomplete="current-password" class="field" />
+              <input name="password" type="password" autocomplete="current-password" class="field font-normal" aria-invalid="false" />
               <button type="button" class="admin-password__toggle" aria-pressed="false" id="toggle-password">Mostrar</button>
             </span>
-            <span class="form-error" data-error="password" hidden></span>
+            <span class="text-xs font-medium text-red-700" data-error="password" hidden></span>
           </label>
 
-          <p role="alert" class="form-alert" id="login-message" hidden></p>
+          <p role="alert" class="m-0 text-sm font-medium text-red-700" id="login-message" hidden></p>
 
-          <button type="submit" class="btn-primary w-full" style="margin-top: 0.25rem" id="login-submit">Ingresar</button>
+          <button type="submit" class="btn-primary mt-1 w-full" id="login-submit">Ingresar</button>
         </form>
 
         <a href="../index.html" class="admin-gate__back">Volver al sitio</a>
@@ -82,6 +82,7 @@
           input.setAttribute("aria-invalid", String(Boolean(text)))
         }
 
+        // signIn() de actions.ts: validación, mensajes y estado "Ingresando…".
         form.addEventListener("submit", (e) => {
           e.preventDefault()
           if (submit.disabled) return
@@ -95,7 +96,6 @@
 
           submit.disabled = true
           submit.textContent = "Ingresando…"
-          // Pequeña espera para imitar la ida y vuelta al servidor.
           setTimeout(() => {
             const result = FIISAuth.login(correo, password.value)
             if (result.ok) {

@@ -7,65 +7,64 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Panel</title>
     <link rel="icon" href="../assets/logo-fiis.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="../assets/css/base.css" />
-    <link rel="stylesheet" href="../assets/css/admin.css" />
-    <script src="../assets/js/auth.js"></script>
+    <link rel="stylesheet" href="../assets/css/fonts.css?v=6" />
+    <link rel="stylesheet" href="../assets/css/app.css?v=6" />
+    <script src="../assets/js/auth.js?v=6"></script>
     <script>
+      // URL del login sin pasar por redirecciones (en Vercel el panel es "/admin/panel" y el login "/admin").
+      window.LOGIN_URL = /\.html$/.test(location.pathname) ? "index.html" : location.pathname.replace(/\/[^/]*$/, "") || "/"
       // Primera barrera del panel: sin sesión no se entra (proxy.ts + requireSession()).
-      if (!FIISAuth.getSession()) location.replace(FIISAuth.hadSession() ? "index.html?sesion=expirada" : "index.html")
+      if (!FIISAuth.getSession()) location.replace(FIISAuth.hadSession() ? LOGIN_URL + "?sesion=expirada" : LOGIN_URL)
     </script>
   </head>
   <body>
-    <div class="panel-body">
-      <header class="panel-topbar">
-        <button type="button" class="panel-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="drawer-open">
-          <i data-icon="Menu" data-size="20"></i>
+    <!-- PanelShell.tsx, con los mismos className -->
+    <div class="min-h-svh bg-surface-tint">
+      <header class="sticky top-0 z-40 flex h-16 items-center gap-3 bg-white px-4 sm:px-6">
+        <button
+          type="button"
+          aria-label="Abrir menú"
+          aria-expanded="false"
+          class="rounded-lg p-2 text-ink transition-transform duration-150 hover:bg-parchment active:scale-90 lg:hidden"
+          id="drawer-open"
+        >
+          <i data-icon="Menu" class="h-5 w-5"></i>
         </button>
-        <div class="panel-brand">
-          <img src="../assets/logo-fiis.png" alt="" width="36" height="36" />
-          <p>Conferencias FIIS</p>
+        <div class="flex items-center gap-2.5">
+          <img src="../assets/img/logo-fiis-96.webp" srcset="../assets/img/logo-fiis-48.webp 1x, ../assets/img/logo-fiis-96.webp 2x" alt="" width="36" height="36" decoding="async" data-nimg="1" style="color:transparent" class="h-9 w-9 shrink-0 object-contain" />
+          <p class="m-0 text-lg font-semibold tracking-[-0.01em] text-leaf">Conferencias FIIS</p>
         </div>
-        <div class="panel-user">
-          <div class="panel-user__info">
-            <p class="panel-user__name" id="user-name"></p>
-            <p class="panel-user__rol" id="user-rol"></p>
+        <div class="ml-auto flex items-center gap-3">
+          <div class="hidden text-right leading-tight sm:block">
+            <p class="m-0 text-sm font-semibold text-ink" id="user-name"></p>
+            <p class="m-0 text-xs text-mist" id="user-rol"></p>
           </div>
-          <span class="panel-divider" aria-hidden="true"></span>
-          <button type="button" class="panel-logout" aria-label="Cerrar sesión" id="logout">
-            <i data-icon="LogOut" data-size="16"></i>
-            <span>Cerrar sesión</span>
-          </button>
+          <span class="h-6 w-px bg-black/10" aria-hidden="true"></span>
+          <form id="logout-form">
+            <button
+              type="submit"
+              aria-label="Cerrar sesión"
+              class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-mist transition-[background-color,color,transform] duration-150 hover:bg-parchment hover:text-ink active:scale-[0.97] motion-reduce:active:scale-100"
+            >
+              <i data-icon="LogOut" class="h-4 w-4"></i>
+              <span class="hidden sm:inline">Cerrar sesión</span>
+            </button>
+          </form>
         </div>
       </header>
 
-      <div class="panel-layout">
-        <aside class="panel-lateral panel-aside" id="nav-escritorio"></aside>
-        <main class="panel-main" id="panel-main"></main>
+      <div class="lg:grid lg:grid-cols-[16rem_1fr]">
+        <aside class="panel-lateral sticky top-16 hidden h-[calc(100svh-4rem)] overflow-y-auto px-3 py-5 lg:block" id="nav-escritorio"></aside>
+        <main class="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-8" id="panel-main"></main>
       </div>
 
-      <div class="panel-drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Menú">
-        <button type="button" class="panel-drawer__scrim" aria-label="Cerrar menú" id="drawer-scrim"></button>
-        <aside class="panel-lateral panel-drawer__aside" id="drawer-aside">
-          <div class="panel-drawer__head">
-            <div class="panel-brand">
-              <img src="../assets/logo-fiis.png" alt="" width="36" height="36" />
-              <p>Conferencias FIIS</p>
-            </div>
-            <button type="button" class="panel-icon-btn" aria-label="Cerrar menú" id="drawer-close">
-              <i data-icon="X" data-size="20"></i>
-            </button>
-          </div>
-          <div class="panel-drawer__nav" id="nav-movil"></div>
-        </aside>
-      </div>
+      <div id="drawer-root"></div>
     </div>
 
-    <script src="../assets/js/icons.js"></script>
-    <script src="../assets/js/reportes-data.js"></script>
-    <script src="../assets/js/reportes.js"></script>
-    <script src="../assets/js/panel.js"></script>
+    <script src="../assets/js/icons.js?v=6"></script>
+    <script src="../assets/js/reportes-data.js?v=6"></script>
+    <script src="../assets/js/reportes.js?v=6"></script>
+    <script src="../assets/js/usuarios.js?v=6"></script>
+    <script src="../assets/js/panel.js?v=6"></script>
   </body>
 </html>

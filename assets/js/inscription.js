@@ -1,5 +1,5 @@
 /*
- * Flujo de inscripción (InscriptionModal.tsx):
+ * Flujo de inscripción: InscriptionModal.tsx con los mismos className.
  *   1. Actividad: solo conferencia, solo talleres, o conferencia y talleres (+ elegir talleres con cupo).
  *   2. Datos: según el tipo de participante (Estudiante o Público general).
  *   3. Resumen: actividades, datos e importe total antes de pasar al pago.
@@ -7,6 +7,8 @@
 ;(function () {
   const { agenda, tickets, unasCareers } = window.FIIS
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
+  const C = "<!---->"
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
   const activities = [
     { value: "conferencia", label: "Solo conferencia", hint: "Las ponencias de los 2 días. Sin límite de cupos." },
@@ -17,6 +19,7 @@
   const UNAS = "Universidad Nacional Agraria de la Selva (UNAS)"
   const OTHER = "otra"
 
+  /** Talleres por día. Se cruzan de horario dentro del mismo día, así que se elige uno por día. */
   const workshopDays = agenda
     .map((day) => ({ id: day.id, label: `${day.day} · ${day.date}`, items: day.items.filter((i) => i.kind === "taller" && i.id) }))
     .filter((day) => day.items.length > 0)
@@ -28,6 +31,7 @@
     return item.capacity - (item.enrolled || 0)
   }
 
+  /** "S/ 20.00" → 20. Devuelve null mientras el precio sea "Por definir". */
   function parsePrice(value) {
     const number = Number(value.replace(/[^\d.]/g, ""))
     return /\d/.test(value) && Number.isFinite(number) ? number : null
@@ -36,7 +40,8 @@
   const featured = (tickets.find((t) => t.featured) || tickets[0]).name
   const emptyPerson = { dni: "", code: "", name: "", email: "", phone: "", career: "", university: "", otherUniversity: "" }
 
-  const root = document.getElementById("inscription-root")
+  const root = document.createElement("div")
+  document.body.appendChild(root)
   let s = null
   let returnFocus = null
   let prevOverflow = ""
@@ -58,21 +63,31 @@
     prevOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     render()
-    requestAnimationFrame(() => {
-      root.querySelector(".inscription-scrim").classList.add("is-open")
-      root.querySelector(".inscription-dialog").focus()
-    })
+    const scrim = root.firstElementChild
+    const dialog = root.querySelector("[role=dialog]")
+    scrim.getBoundingClientRect()
+    scrim.style.transition = "opacity 220ms ease-out"
+    dialog.style.transition = reduceMotion ? "opacity 200ms" : "opacity 350ms cubic-bezier(0.22, 1, 0.36, 1), transform 350ms cubic-bezier(0.22, 1, 0.36, 1)"
+    scrim.style.opacity = "1"
+    dialog.style.opacity = "1"
+    dialog.style.transform = "none"
+    requestAnimationFrame(() => dialog.focus())
   }
 
   function close() {
-    const scrim = root.querySelector(".inscription-scrim")
-    if (!scrim) return
-    scrim.classList.remove("is-open")
+    if (!s) return
     s = null
     document.body.style.overflow = prevOverflow
-    setTimeout(() => {
-      if (!s) root.innerHTML = ""
-    }, 350)
+    const scrim = root.firstElementChild
+    const dialog = root.querySelector("[role=dialog]")
+    if (scrim) {
+      scrim.style.opacity = "0"
+      dialog.style.opacity = "0"
+      if (!reduceMotion) dialog.style.transform = "translateY(40px)"
+      setTimeout(() => {
+        if (!s) root.innerHTML = ""
+      }, 350)
+    }
     const target = returnFocus
     requestAnimationFrame(() => target && target.focus && target.focus())
   }
@@ -102,125 +117,117 @@
 
   // ── Render ───────────────────────────────────────────────────
 
-  const choice = (selected, inner, extra) =>
-    `<label class="inscription-choice${selected ? " inscription-choice--selected" : ""}${extra || ""}">${inner}</label>`
-
-  function field(label, key, input) {
+  /** Field: <label class="grid gap-1.5 text-sm font-semibold text-ink">{label}{children}{error}</label> */
+  function Field(label, key, control) {
     const err = s.errors[key]
-    return `<label class="form-label">${label}${input}${err ? `<span class="form-error">${err}</span>` : ""}</label>`
+    return `<label class="grid gap-1.5 text-sm font-semibold text-ink">${label}${control}${err ? `<span class="text-xs font-medium text-red-700">${err}</span>` : ""}</label>`
   }
 
-  function input(key, attrs) {
-    return `<input data-field="${key}" value="${esc(s.person[key])}" class="field" aria-invalid="${Boolean(s.errors[key])}" ${attrs || ""} />`
-  }
+  const input = (key, attrs) => `<input data-field="${key}" value="${esc(s.person[key])}" class="field font-normal" aria-invalid="${Boolean(s.errors[key])}" ${attrs || ""} />`
+
+  const SummaryRow = (label, value) => `<div class="inscription-summary__row"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`
 
   function step1() {
-    const acts = activities
-      .map((a) =>
-        choice(
-          s.activity === a.value,
-          `<input type="radio" name="actividad" value="${a.value}" ${s.activity === a.value ? "checked" : ""} class="sr-only" data-activity-opt />
-           <span style="min-width:0"><span class="choice-label">${a.label}</span><span class="choice-hint">${a.hint}</span></span>
-           <span class="inscription-radio" aria-hidden="true"></span>`,
-        ),
-      )
-      .join("")
-
-    const ws = wantsWorkshops()
-      ? `<div class="inscription-form" style="margin-top:0">
-          <p class="inscription-hint">Elige hasta un taller por día: los talleres de un mismo día se dictan a la misma hora.</p>
-          ${workshopDays
+    return `
+      <form novalidate class="mt-4 grid gap-4" data-form="1">
+        <fieldset class="grid gap-2">
+          <legend class="sr-only">Actividad</legend>
+          ${activities
             .map(
-              (day) => `
-            <fieldset>
-              <legend>${day.label}</legend>
-              ${day.items
-                .map((item) => {
-                  const left = seatsLeft(item.id)
-                  const full = left <= 0
-                  const checked = s.selected[day.id] === item.id
-                  return choice(
-                    checked,
-                    `<input type="checkbox" ${checked ? "checked" : ""} ${full ? "disabled" : ""} class="sr-only" data-workshop-opt="${item.id}" data-day="${day.id}" />
-                     <span style="min-width:0"><span class="choice-label">${esc(item.title)}</span><span class="choice-hint">${item.time} · ${esc(item.speaker)} · ${esc(item.location)}</span></span>
-                     <span class="inscription-seats${full ? " is-full" : left <= 5 ? " is-low" : ""}">${full ? "Sin cupos" : `${left} cupos`}</span>`,
-                    full ? " inscription-choice--disabled" : "",
-                  )
-                })
-                .join("")}
-            </fieldset>`,
+              (item) => `<label class="inscription-choice ${s.activity === item.value ? "inscription-choice--selected" : ""}">
+                <input type="radio" name="actividad" value="${item.value}" ${s.activity === item.value ? "checked" : ""} class="sr-only" data-activity-opt />
+                <span class="min-w-0"><span class="block text-sm font-semibold text-ink">${item.label}</span><span class="block text-xs text-mist">${item.hint}</span></span>
+                <span class="inscription-radio" aria-hidden="true"></span>
+              </label>`,
             )
             .join("")}
-        </div>`
-      : ""
-
-    return `
-      <form class="inscription-form" novalidate data-form="1">
-        <fieldset><legend class="sr-only">Actividad</legend>${acts}</fieldset>
-        ${ws}
-        ${s.stepError ? `<p role="alert" class="form-alert">${s.stepError}</p>` : ""}
+        </fieldset>
+        ${
+          wantsWorkshops()
+            ? `<div class="grid gap-4">
+                <p class="text-sm text-mist">Elige hasta un taller por día: los talleres de un mismo día se dictan a la misma hora.</p>
+                ${workshopDays
+                  .map(
+                    (day) => `<fieldset class="grid gap-2">
+                      <legend class="mb-2 text-sm font-semibold text-ink">${day.label}</legend>
+                      ${day.items
+                        .map((item) => {
+                          const left = seatsLeft(item.id)
+                          const full = left <= 0
+                          const checked = s.selected[day.id] === item.id
+                          return `<label class="inscription-choice ${checked ? "inscription-choice--selected" : ""} ${full ? "inscription-choice--disabled" : ""}">
+                            <input type="checkbox" ${checked ? "checked" : ""} ${full ? "disabled" : ""} class="sr-only" data-workshop-opt="${item.id}" data-day="${day.id}" />
+                            <span class="min-w-0"><span class="block text-sm font-semibold text-ink">${esc(item.title)}</span><span class="block text-xs text-mist">${item.time}${C} · ${C}${esc(item.speaker)}${C} · ${C}${esc(item.location)}</span></span>
+                            <span class="inscription-seats ${full ? "is-full" : left <= 5 ? "is-low" : ""}">${full ? "Sin cupos" : `${left} cupos`}</span>
+                          </label>`
+                        })
+                        .join("")}
+                    </fieldset>`,
+                  )
+                  .join("")}
+              </div>`
+            : ""
+        }
+        ${s.stepError ? `<p role="alert" class="text-sm font-medium text-red-700">${s.stepError}</p>` : ""}
         <button type="submit" class="btn-primary w-full">Continuar</button>
       </form>`
   }
 
   function step2() {
     const p = s.person
-    const types = tickets
-      .map((t) =>
-        choice(
-          s.ticket === t.name,
-          `<input type="radio" name="tipo" value="${esc(t.name)}" ${s.ticket === t.name ? "checked" : ""} class="sr-only" data-ticket-opt />
-           <span class="choice-label">${esc(t.name)}</span><span class="inscription-radio" aria-hidden="true"></span>`,
-        ),
-      )
-      .join("")
-
     let student = ""
     if (s.ticket === "Estudiante") {
-      const unis = [
-        { value: UNAS, label: "UNAS" },
-        { value: OTHER, label: "Otra institución" },
-      ]
-        .map((u) =>
-          choice(
-            p.university === u.value,
-            `<input type="radio" name="institucion" value="${esc(u.value)}" ${p.university === u.value ? "checked" : ""} class="sr-only" data-uni-opt ${u.value === UNAS ? 'data-field="university"' : ""} />
-             <span class="choice-label">${u.label}</span><span class="inscription-radio" aria-hidden="true"></span>`,
-          ),
-        )
-        .join("")
       student = `
-        <fieldset class="cols-2">
-          <legend>Institución o universidad de procedencia</legend>
-          ${unis}
-          ${s.errors.university ? `<span class="form-error col-span-2">${s.errors.university}</span>` : ""}
+        <fieldset class="grid grid-cols-2 gap-2">
+          <legend class="mb-2 text-sm font-semibold text-ink">Institución o universidad de procedencia</legend>
+          ${[
+            { value: UNAS, label: "UNAS" },
+            { value: OTHER, label: "Otra institución" },
+          ]
+            .map(
+              (u) => `<label class="inscription-choice ${p.university === u.value ? "inscription-choice--selected" : ""}">
+                <input type="radio" name="institucion" ${u.value === UNAS ? 'data-field="university"' : ""} value="${esc(u.value)}" ${p.university === u.value ? "checked" : ""} class="sr-only" data-uni-opt />
+                <span class="text-sm font-semibold text-ink">${u.label}</span><span class="inscription-radio" aria-hidden="true"></span>
+              </label>`,
+            )
+            .join("")}
+          ${s.errors.university ? `<span class="col-span-2 text-xs font-medium text-red-700">${s.errors.university}</span>` : ""}
         </fieldset>
-        ${p.university === OTHER ? field("Nombre de la institución o universidad", "otherUniversity", input("otherUniversity", 'autocomplete="organization"')) : ""}
+        ${p.university === OTHER ? Field("Nombre de la institución o universidad", "otherUniversity", input("otherUniversity", 'autocomplete="organization"')) : ""}
         ${
           p.university === UNAS
-            ? field(
+            ? Field(
                 "Carrera profesional",
                 "career",
-                `<select data-field="career" class="field" aria-invalid="${Boolean(s.errors.career)}">
-                  <option value="">Selecciona tu carrera…</option>
-                  ${unasCareers.map((c) => `<option value="${esc(c)}" ${p.career === c ? "selected" : ""}>${esc(c)}</option>`).join("")}
-                </select>`,
+                `<select data-field="career" class="field font-normal" aria-invalid="${Boolean(s.errors.career)}"><option value="">Selecciona tu carrera…</option>${unasCareers
+                  .map((c) => `<option value="${esc(c)}"${p.career === c ? " selected" : ""}>${esc(c)}</option>`)
+                  .join("")}</select>`,
               )
             : ""
         }
-        ${p.university === OTHER ? field("Carrera profesional", "career", input("career")) : ""}`
+        ${p.university === OTHER ? Field("Carrera profesional", "career", input("career")) : ""}`
     }
 
     return `
-      <form class="inscription-form" novalidate data-form="2">
-        <fieldset class="cols-2"><legend>Tipo de participante</legend>${types}</fieldset>
-        ${field("DNI", "dni", input("dni", 'inputmode="numeric" autocomplete="off"'))}
-        ${s.ticket === "Estudiante" ? field("Código de estudiante", "code", input("code", 'autocomplete="off"')) : ""}
-        ${field("Nombres y apellidos completos", "name", input("name", 'autocomplete="name"'))}
-        ${field("Correo electrónico", "email", input("email", 'type="email" autocomplete="email"'))}
-        ${field("Número de celular", "phone", input("phone", 'type="tel" inputmode="numeric" autocomplete="tel-national"'))}
+      <form novalidate class="mt-4 grid gap-4" data-form="2">
+        <fieldset class="grid grid-cols-2 gap-2">
+          <legend class="mb-2 text-sm font-semibold text-ink">Tipo de participante</legend>
+          ${tickets
+            .map(
+              (t) => `<label class="inscription-choice ${s.ticket === t.name ? "inscription-choice--selected" : ""}">
+                <input type="radio" name="tipo" value="${esc(t.name)}" ${s.ticket === t.name ? "checked" : ""} class="sr-only" data-ticket-opt />
+                <span class="text-sm font-semibold text-ink">${esc(t.name)}</span><span class="inscription-radio" aria-hidden="true"></span>
+              </label>`,
+            )
+            .join("")}
+        </fieldset>
+        ${Field("DNI", "dni", input("dni", 'inputmode="numeric" autocomplete="off"'))}
+        ${s.ticket === "Estudiante" ? Field("Código de estudiante", "code", input("code", 'autocomplete="off"')) : ""}
+        ${Field("Nombres y apellidos completos", "name", input("name", 'autocomplete="name"'))}
+        ${Field("Correo electrónico", "email", input("email", 'type="email" autocomplete="email"'))}
+        ${Field("Número de celular", "phone", input("phone", 'type="tel" inputmode="numeric" autocomplete="tel-national"'))}
         ${student}
-        <button type="submit" class="btn-primary w-full" style="margin-top:0.25rem">Continuar</button>
+        <button type="submit" class="btn-primary mt-1 w-full">Continuar</button>
       </form>`
   }
 
@@ -234,28 +241,24 @@
 
   function step3() {
     const p = s.person
-    const row = (l, v) => `<div class="inscription-summary__row"><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`
     const ls = lines()
     const amounts = ls.map((l) => parsePrice(l.price))
     const total = amounts.every((v) => v !== null) ? `S/ ${amounts.reduce((a, v) => a + v, 0).toFixed(2)}` : "Por definir"
     const university = p.university === OTHER ? p.otherUniversity.trim() : p.university
     return `
-      <div class="inscription-form">
+      <div class="mt-4 grid gap-4">
         <section class="inscription-summary">
           <h3>Participante</h3>
           <dl>
-            ${row("Tipo", s.ticket)}
-            ${row("Nombre", p.name.trim())}
-            ${row("DNI", p.dni)}
-            ${s.ticket === "Estudiante" ? row("Código", p.code.trim()) + row("Carrera", p.career.trim()) + row("Institución", university) : ""}
-            ${row("Correo", p.email.trim())}
-            ${row("Celular", p.phone)}
+            ${SummaryRow("Tipo", s.ticket)}${SummaryRow("Nombre", p.name.trim())}${SummaryRow("DNI", p.dni)}
+            ${s.ticket === "Estudiante" ? SummaryRow("Código", p.code.trim()) + SummaryRow("Carrera", p.career.trim()) + SummaryRow("Institución", university) : ""}
+            ${SummaryRow("Correo", p.email.trim())}${SummaryRow("Celular", p.phone)}
           </dl>
         </section>
         <section class="inscription-summary">
           <h3>Importe</h3>
           <dl>
-            ${ls.map((l) => row(l.label, l.price)).join("")}
+            ${ls.map((l) => SummaryRow(l.label, l.price)).join("")}
             <div class="inscription-summary__total"><dt>Total</dt><dd>${total}</dd></div>
           </dl>
         </section>
@@ -264,33 +267,35 @@
   }
 
   function render() {
-    const existing = root.querySelector(".inscription-scrim")
-    const isOpen = existing && existing.classList.contains("is-open")
+    const prevScrim = root.firstElementChild
+    const prevDialog = root.querySelector("[role=dialog]")
     const n = s.step === "done" ? 3 : s.step
     const titles = { 1: "¿En qué quieres participar?", 2: "Tus datos", 3: "Revisa tu inscripción" }
 
     const body =
       s.step === "done"
-        ? `<div class="inscription-done">
-            <span class="inscription-done__icon">${icon("Check", { size: 22 })}</span>
-            <h2 id="inscription-title">Datos registrados</h2>
-            <p class="text-body">${esc(s.person.name.trim())}, guardamos tu inscripción como ${esc(s.ticket.toLowerCase())}. Tu lugar queda confirmado cuando se apruebe el pago con Yape; te llegará la confirmación a ${esc(s.person.email.trim())}.</p>
-            <button type="button" class="btn-primary" data-close>Cerrar</button>
+        ? `<div class="px-1 pt-6 pb-2 text-center">
+            <span class="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e8f5e9] text-emerald-700">${icon("Check", { size: 22 })}</span>
+            <h2 id="inscription-title" class="mt-4 text-xl font-semibold tracking-tight text-ink">Datos registrados</h2>
+            <p class="text-body mt-2 text-sm text-mist">${esc(s.person.name.trim())}${C}, guardamos tu inscripción como ${C}${esc(s.ticket.toLowerCase())}${C}. Tu lugar queda confirmado cuando se apruebe el pago con Yape; te llegará la confirmación a ${C}${esc(s.person.email.trim())}${C}.</p>
+            <button type="button" class="btn-primary mt-6 w-full" data-close>Cerrar</button>
           </div>`
-        : `<header class="inscription-header">
-            <div class="inscription-step">
+        : `<header class="pr-8">
+            <div class="flex items-center gap-2">
               ${s.step !== 1 ? `<button type="button" class="inscription-back" aria-label="Volver al paso anterior" data-back>${icon("ArrowLeft", { size: 16 })}</button>` : ""}
-              <p>Inscripción · Paso ${n} de 3</p>
+              <p class="text-sm text-mist">Inscripción · Paso ${C}${n}${C} de 3</p>
             </div>
             <div class="inscription-progress" aria-hidden="true">${[1, 2, 3].map((i) => `<span class="${i <= n ? "is-active" : ""}"></span>`).join("")}</div>
-            <h2 id="inscription-title" class="inscription-title">${titles[s.step]}</h2>
+            <h2 id="inscription-title" class="mt-3 text-xl font-semibold tracking-tight text-ink">${titles[s.step]}</h2>
           </header>
           ${s.step === 1 ? step1() : s.step === 2 ? step2() : step3()}`
 
+    const scrimStyle = prevScrim ? prevScrim.getAttribute("style") : "opacity: 0"
+    const dialogStyle = prevDialog ? prevDialog.getAttribute("style") : `opacity: 0; transform: ${reduceMotion ? "none" : "translateY(40px)"}`
     root.innerHTML = `
-      <div class="inscription-scrim${isOpen ? " is-open" : ""}">
-        <div class="inscription-dialog" role="dialog" aria-modal="true" aria-labelledby="inscription-title" tabindex="-1">
-          <button type="button" class="inscription-close" aria-label="Cerrar" data-close>${icon("X", { size: 18 })}</button>
+      <div class="inscription-scrim" style="${scrimStyle}">
+        <div role="dialog" aria-modal="true" aria-labelledby="inscription-title" tabindex="-1" class="inscription-dialog" style="${dialogStyle}">
+          <button type="button" class="absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center text-ink/45" aria-label="Cerrar" data-close>${icon("X", { size: 18 })}</button>
           ${body}
         </div>
       </div>`
@@ -299,7 +304,7 @@
   function goTo(step) {
     s.step = step
     render()
-    const dialog = root.querySelector(".inscription-dialog")
+    const dialog = root.querySelector("[role=dialog]")
     dialog.scrollTo({ top: 0 })
     dialog.focus()
   }
@@ -321,6 +326,12 @@
     if (e.target.closest("[data-confirm]")) return goTo("done")
   })
 
+  function restoreFocus(t) {
+    const sel = t.name ? `input[name="${t.name}"][value="${CSS.escape(t.value)}"]` : t.dataset.workshopOpt ? `[data-workshop-opt="${t.dataset.workshopOpt}"]` : null
+    const el = sel && root.querySelector(sel)
+    if (el) el.focus()
+  }
+
   root.addEventListener("change", (e) => {
     if (!s) return
     const t = e.target
@@ -340,6 +351,7 @@
       s.errors = {}
       render()
     } else if (t.matches("[data-uni-opt]")) {
+      // La carrera depende de la institución: al cambiarla se vuelve a elegir.
       s.person.university = t.value
       s.person.career = ""
       delete s.errors.university
@@ -355,14 +367,6 @@
     restoreFocus(t)
   })
 
-  function restoreFocus(t) {
-    const sel = t.name ? `input[name="${t.name}"][value="${CSS.escape(t.value)}"]` : t.dataset.workshopOpt ? `[data-workshop-opt="${t.dataset.workshopOpt}"]` : null
-    if (sel) {
-      const el = root.querySelector(sel)
-      if (el) el.focus()
-    }
-  }
-
   root.addEventListener("input", (e) => {
     if (!s) return
     const t = e.target
@@ -377,7 +381,7 @@
     if (s.errors[key]) {
       delete s.errors[key]
       const label = t.closest("label")
-      const err = label && label.querySelector(".form-error")
+      const err = label && label.querySelector(".text-red-700")
       if (err) err.remove()
       t.setAttribute("aria-invalid", "false")
     }
@@ -399,6 +403,7 @@
       s.errors = validatePerson(s.person, s.ticket)
       if (Object.keys(s.errors).length === 0) return goTo(3)
       render()
+      // Primer campo con error en el orden en que aparece en pantalla.
       const first = [...root.querySelectorAll("[data-field]")].find((n) => s.errors[n.dataset.field])
       if (first) first.focus()
     }
@@ -411,7 +416,7 @@
       return close()
     }
     if (e.key !== "Tab") return
-    const dialog = root.querySelector(".inscription-dialog")
+    const dialog = root.querySelector("[role=dialog]")
     const nodes = [...dialog.querySelectorAll("button, input, select, [href], [tabindex]:not([tabindex='-1'])")].filter((n) => !n.hasAttribute("disabled"))
     const first = nodes[0]
     const last = nodes[nodes.length - 1]

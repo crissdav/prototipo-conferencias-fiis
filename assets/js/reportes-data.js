@@ -2,8 +2,13 @@
  * Datos de prueba del panel: mismo algoritmo que backend/database/seeders/ReportesTestDataSeeder.php
  * y mismas respuestas que ReporteController (GET /admin/reportes/*), calculadas en el navegador.
  * Lo aleatorio del seeder (orden de instituciones, códigos) usa una semilla fija para que no cambie.
+ *
+ * La base de producción (conferenciasfiis.cloud) está vacía: sin actividades, inscritos, pagos
+ * ni documentos. Para ser idéntico, el prototipo arranca igual. Con true se cargan los 150
+ * participantes del seeder; también se activa abriendo el panel con ?datos=prueba.
  */
 ;(function () {
+  const DATOS_DE_PRUEBA = false || new URLSearchParams(location.search).get("datos") === "prueba"
   let seed = 20261125
   function rand() {
     seed |= 0
@@ -24,7 +29,7 @@
   const pad = (n, len) => String(n).padStart(len, "0")
 
   // 1. Actividades
-  const actividades = [
+  const actividades = !DATOS_DE_PRUEBA ? [] : [
     { id: 1, titulo: "Conferencias Magistrales - Día 1: Nube, Datos y Software", tipo: "conferencia", fecha: "2026-11-25", hora_inicio: "08:30:00", hora_fin: "13:00:00", ponente: "Ing. Einstein Ortiz / Ing. Abel Silva / Mg. Julio Gonzales", ubicacion: "Auditorio Central UNAS", aforo_maximo: 350 },
     { id: 2, titulo: "Conferencias Magistrales - Día 2: Inteligencia Artificial y Amazonía Digital", tipo: "conferencia", fecha: "2026-11-26", hora_inicio: "08:30:00", hora_fin: "13:00:00", ponente: "José Cárdenas Vega / Msc. Darwin Guerrero / Incuba UNAS", ubicacion: "Auditorio Central UNAS", aforo_maximo: 350 },
     { id: 3, titulo: "Taller: Microservicios con Laravel y Docker", tipo: "taller", fecha: "2026-11-25", hora_inicio: "16:00:00", hora_fin: "19:00:00", ponente: "Mg. Abraham Ríos Rivera", ubicacion: "Laboratorio de Simulación", aforo_maximo: 20 },
@@ -65,7 +70,7 @@
   const asistencias = [] // { participante_id, actividad_id, fecha }
   const documentos = []
 
-  for (let i = 1; i <= 150; i++) {
+  for (let i = 1; i <= (DATOS_DE_PRUEBA ? 150 : 0); i++) {
     const nombre = nombresLista[(i * 3 + 7) % nombresLista.length]
     const ap1 = apellidosLista[(i * 5 + 3) % apellidosLista.length]
     const ap2 = apellidosLista[(i * 7 + 11) % apellidosLista.length]
@@ -176,6 +181,15 @@
     por_institucion: Object.entries(porInst)
       .sort((a, b) => b[1] - a[1])
       .map(([institucion, n]) => ({ institucion, total: n, porcentaje: pct(n, total) })),
+    por_fecha: [...new Set(participantes.map((p) => p.fecha_inscripcion))].sort().map((fecha) => {
+      const del = participantes.filter((p) => p.fecha_inscripcion === fecha)
+      return {
+        fecha,
+        total: del.length,
+        estudiantes: del.filter((p) => p.categoria === "estudiante").length,
+        publico_general: del.filter((p) => p.categoria === "publico_general").length,
+      }
+    }),
     participantes: [...participantes].reverse().slice(0, 100),
     filtros_disponibles: {
       instituciones: Object.keys(porInst).sort(),
@@ -239,7 +253,7 @@
 
   // GET /admin/reportes/asistencia
   const inscritosConf = participantes.filter((p) => p.tipo_actividad !== "solo_talleres").map((p) => p.id)
-  const asistentesDia = (conf) => new Set(asistencias.filter((a) => a.actividad_id === conf.id).map((a) => a.participante_id))
+  const asistentesDia = (conf) => new Set(asistencias.filter((a) => conf && a.actividad_id === conf.id).map((a) => a.participante_id))
   const d1 = asistentesDia(conf1)
   const d2 = asistentesDia(conf2)
   const ambos = [...d1].filter((id) => d2.has(id))
@@ -251,8 +265,8 @@
   const asistencia = {
     conferencias: {
       total_inscritos: tc,
-      dia_1: { fecha: conf1.fecha, asistentes: d1.size, porcentaje: pct(d1.size, tc) },
-      dia_2: { fecha: conf2.fecha, asistentes: d2.size, porcentaje: pct(d2.size, tc) },
+      dia_1: { fecha: conf1 ? conf1.fecha : null, asistentes: d1.size, porcentaje: pct(d1.size, tc) },
+      dia_2: { fecha: conf2 ? conf2.fecha : null, asistentes: d2.size, porcentaje: pct(d2.size, tc) },
       ambos_dias: { total: ambos.length, porcentaje: pct(ambos.length, tc) },
       solo_un_dia: { total: soloD1.length + soloD2.length, porcentaje: pct(soloD1.length + soloD2.length, tc), desglose: { solo_dia_1: soloD1.length, solo_dia_2: soloD2.length } },
       ausentes: { total: ausentes.length, porcentaje: pct(ausentes.length, tc) },
